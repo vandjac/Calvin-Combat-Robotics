@@ -81,11 +81,11 @@ void loop() {
 
     // L2 Weapon Control
     if(PS4.R2Value()>10){
-      value = map(PS4.R2Value(), 10, 255, 60, 110);
+      value = map(PS4.R2Value(), 10, 255, 60, 90);
       rightRumble = PS4.R2Value();
     }
     if(PS4.L2Value()>10){
-      value = map(PS4.L2Value(), 10, 255, 60, 90);
+      value = map(PS4.L2Value(), 10, 255, 60, 80);
       leftRumble = PS4.L2Value();
     }
     if(PS4.R2Value()<10 and PS4.L2Value()<10){
