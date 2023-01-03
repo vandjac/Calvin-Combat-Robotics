@@ -2,8 +2,6 @@
 #include <ESP32Servo.h> //Library that allows us to control servo motors, brushed motors, and brushless motors using PWM signals 
 //#include <WiFi.h>
 
-// Hello World
-
 //For erasing flash: python -m esptool --chip esp32 erase_flash
 
 //Declare objects for each motor. BDC stands for brushed DC and BLDC stands for brushless DC
@@ -11,21 +9,18 @@ Servo BDC1;
 Servo BDC2;
 Servo BLDC1;
 //Initialize our variables (variables will be explained as they are used)
-float value;
+float weaponValue;
 float xvalue;
 float yvalue;
 float driveMotor1;
 float driveMotor2;
 float forwardSpeed = 128;
 float reverseSpeed = 70;
-float forwardSpeedTemp = forwardSpeed;
-float reverseSpeedTemp = reverseSpeed;
 float xvalueDelay = 0;
 float yvalueDelay = 0;
 float rumble = 0;
-float leftRumble = 0;
-float rightRumble = 0;
 bool reversedTurn = false;
+bool reversedDrive = false;
 
 //In the setup function is code that only runs once at the start of the program (when your robot is turned on)
 void setup() {
@@ -77,20 +72,16 @@ void loop() {
 
 
     // L2 Weapon Control
-    if(PS4.R2Value()>10){
-      value = map(PS4.R2Value(), 0, 255, 30, 90);
-      rightRumble = PS4.R2Value();
-    }
     if(PS4.L2Value()>10){
-      value = map(PS4.L2Value(), 0, 255, 30, 60);
-      leftRumble = PS4.L2Value();
+      weaponValue = map(PS4.L2Value(), 0, 255, 30, 60);
+      rumble = PS4.L2Value();
     }
     if(PS4.R2Value()<10 and PS4.L2Value()<10){
-      leftRumble = rightRumble = 0;
-      value = 30;
+      rumble = 0;
+      weaponValue = 30;
     }
     BLDC1.write(value);
-    PS4.setRumble(leftRumble, rightRumble);
+    PS4.setRumble(rumble, rumble);
     PS4.sendToController();
 
     /*
@@ -112,7 +103,7 @@ void loop() {
       PS4.sendToController();
     */
 
-    
+    /*
       //Tank drive
       driveMotor1 = map(PS4.RStickY(), -128, 127, 50, 142);
       driveMotor2 = map(PS4.LStickY(), -128, 127, 50, 142);
@@ -128,43 +119,6 @@ void loop() {
       if(driveMotor2>85 and driveMotor2<105){
       driveMotor2 = 99;
       }
-
-    /*
-      //Normal arcade drive
-      //Take the x value of the right stick (which is anywhere from -128 to 128), and convert it to a value from -90 to 90. This is so we have a nice range of 180 "degrees".
-      xvalue = map(PS4.RStickX(), -128, 127, -90, 90);
-      yvalue = map(PS4.LStickY(), -128, 127, -90, 90);
-
-      // Deadzone calculations
-      if(xvalue < 10 and xvalue > -10) {
-      xvalue = 0;
-      }
-      if(yvalue <10 and yvalue > -10) {
-      yvalue = 0;
-      }
-
-      //The y value controls the speed, and the x value controls the direction. In order to change direction, the speed of one of the motors needs to be greater than the other. Therefore, we add the direction value to one motor and subtract it from the other.
-      driveMotor2 = yvalue+xvalue;
-      driveMotor1 = yvalue-xvalue;
-
-      //Now we map those values to the range of values that the motor controller can read, which you may need to test, but usually seems to be from around 0-180.
-      driveMotor1 = map(driveMotor1, -90, 90, 50, 148);
-      driveMotor2 = map(driveMotor2, -90, 90, 148, 50);
-
-      //We need to create deadzones for the sticks on the controller, since their resting point isn't always at 0. This may need to be adjusted for your controller.
-      //    if(driveMotor1>80 and driveMotor1<100){
-      //      driveMotor1 = 100;
-      //    }
-      //    if(driveMotor2>80 and driveMotor2<100){
-      //      driveMotor2 = 100;
-      //    }
-
-      Serial.print(driveMotor1);
-      Serial.print(driveMotor2);
-
-      //Write the values to the motor controllers.
-      BDC1.write(driveMotor1);
-      BDC2.write(driveMotor2);
     */
 
     /*
@@ -229,7 +183,9 @@ void loop() {
       BDC2.write(driveMotor1);
       }
     */
-    /*
+
+    
+    
     //Normal Arcade Drive
     //Take values from joysticks (from -128 to 127) and map them to a more usable range (-90 to 90)
     xvalue = map(PS4.LStickY(), -128, 127, -90, 90);
@@ -242,22 +198,27 @@ void loop() {
     if (xvalue > -10 and xvalue < 10) {
       xvalue = 0;
     }
+    
     //xvalueDelay and yvalueDelay are delayed versions of the xvalue and yvalue. They will try to reach xvalue and yvalue, but will be slightly behind in order to create a more smooth response from the motor
     if (xvalueDelay < xvalue) {
       xvalueDelay += 1;
       delay(1);
     }
+    
     if (xvalueDelay > xvalue) {
       xvalueDelay -= 1;
       delay(1);
     }
+    
     if (yvalue > -20 and yvalue < 20) {
       yvalue = 0;
     }
+    
     if (yvalueDelay < yvalue) {
       yvalueDelay += 5;
       delay(1);
     }
+    
     if (yvalueDelay > yvalue) {
       yvalueDelay -= 5;
       delay(1);
@@ -275,12 +236,12 @@ void loop() {
     driveMotor2 = yvalueDelay + xvalueDelay;
     driveMotor1 = yvalueDelay - xvalueDelay;
 
-    //Map the motor values from -90 to 90 to 50 to 148 (numbers that are meaningful to the motor controller).
-    //Brushed and brushless motors generally have a range from 0-180, where 0 is fully backwards, 90 is neatral, and 180 is fully forwards.
+    //Map the motor values from -90 to 90 onto reverseSpeed to forwardSpeed (numbers that are meaningful to the motor controller).
+    //Brushed and brushless motors generally have a range from 0-180, where 0 is fully backwards, 90 is neutral, and 180 is fully forwards.
     //In practice, that isn't always perfectly true. For instance, you way need to play around with the middle value (it might be 85 instead of 90 for example).
     driveMotor2 = map(driveMotor2, -90, 90, forwardSpeed, reverseSpeed);
     driveMotor1 = map(driveMotor1, -90, 90, reverseSpeed, forwardSpeed);
-    */
+    
     //Write the values to the motors
     if (reversedTurn == false) {
       BDC1.write(driveMotor1);
@@ -291,17 +252,16 @@ void loop() {
     }
   }
 }
+
 void onEvent() {
   //Flip forward/reverse direction of robot with x button (if you wired it wrong, or you want to drive your robot backwards, or you're driving your robot upside down)
   if (PS4.event.button_down.cross) {
-    if (forwardSpeed == forwardSpeedTemp) {
-      forwardSpeed = reverseSpeedTemp;
-      reverseSpeed = forwardSpeedTemp;
-    } else {
-      forwardSpeed = forwardSpeedTemp;
-      reverseSpeed = reverseSpeedTemp;
-    }
+    reversedDrive = !reversedDrive;
+    float temp = forwardSpeed;
+    forwardSpeed = reversedSpeed;
+    reversedSpeed = temp;
   }
+  
   //Flip turning direction of robot with square button (if you wired it wrong, or you want to drive your robot backwards, or you're driving your robot upside down)
   if (PS4.event.button_down.square) {
     reversedTurn = !reversedTurn;
