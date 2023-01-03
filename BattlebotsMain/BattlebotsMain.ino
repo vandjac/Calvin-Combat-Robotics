@@ -35,7 +35,7 @@ void setup() {
   //Blue Genuine Controller
   //PS4.begin("78:21:84:7f:ee:40");
   //Black Knockoff Controller
-  PS4.begin("e8:d8:19:51:01:b2");
+  //PS4.begin("e8:d8:19:51:01:b2");
   //Black Genuine Controller
   //PS4.begin("30:C6:F7:29:75:08");
   //White Knockoff Controller
@@ -43,7 +43,7 @@ void setup() {
   //Controller 6
   //PS4.begin("e8:d8:19:51:01:b6");
   //Controller 5
-  //PS4.begin("e8:d8:19:51:01:b5");
+  PS4.begin("e8:d8:19:51:01:b5");
   //Controller 4
   //PS4.begin("e8:d8:19:51:01:b4");
   //Kyle's controller
@@ -72,15 +72,22 @@ void loop() {
 
 
     // L2 Weapon Control
-    if(PS4.L2Value()>10){
+    if(PS4.L2Value() > 10){
       weaponValue = map(PS4.L2Value(), 0, 255, 30, 60);
       rumble = PS4.L2Value();
     }
+    
+    if(PS4.R2Value() > 10) {
+      weaponValue = map(PS4.R2Value(), 0, 255, 40, 80);
+      rumble = PS4.R2Value();
+    }
+    
     if(PS4.R2Value()<10 and PS4.L2Value()<10){
       rumble = 0;
       weaponValue = 30;
     }
-    BLDC1.write(value);
+    
+    BLDC1.write(weaponValue);
     PS4.setRumble(rumble, rumble);
     PS4.sendToController();
 
@@ -210,7 +217,7 @@ void loop() {
       delay(1);
     }
     
-    if (yvalue > -20 and yvalue < 20) {
+    if (yvalue > -10 and yvalue < 10) {
       yvalue = 0;
     }
     
@@ -258,8 +265,8 @@ void onEvent() {
   if (PS4.event.button_down.cross) {
     reversedDrive = !reversedDrive;
     float temp = forwardSpeed;
-    forwardSpeed = reversedSpeed;
-    reversedSpeed = temp;
+    forwardSpeed = reverseSpeed;
+    reverseSpeed = temp;
   }
   
   //Flip turning direction of robot with square button (if you wired it wrong, or you want to drive your robot backwards, or you're driving your robot upside down)
